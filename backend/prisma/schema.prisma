@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TryOnStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+// Користувач: реєстрація з мірками (у сантиметрах)
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  nickname     String   @unique
+  avatarPath   String?
+  heightCm     Int
+  chestCm      Int
+  waistCm      Int
+  hipsCm       Int
+  theme        String   @default("system") // day | night | system
+  createdAt    DateTime @default(now())
+
+  photos   UserPhoto[]
+  tryOns   TryOn[]
+  wardrobe WardrobeItem[]
+}
+
+// Фото користувача для примірки (автовидалення після expiresAt)
+model UserPhoto {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  storagePath String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tryOns TryOn[]
+
+  @@index([userId])
+}
+
+// Магазин-джерело: Zara, Bershka тощо
+model Store {
+  id      Int    @id @default(autoincrement())
+  name    String @unique
+  siteUrl String?
+
+  items Item[]
+}
+
+// Річ з каталогу. Оновлюється щодня: upsert за (storeId, externalId)
+model Item {
+  id          Int      @id @default(autoincrement())
+  storeId     Int
+  externalId  String
+  name        String
+  category    String   @default("top") // MVP: лише верхній одяг
+  color       String
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("UAH")
+  imageUrl    String
+  productUrl  String
+  isAvailable Boolean  @default(true)
+  lastSeenAt  DateTime @default(now())
+
+  store    Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sizes    ItemSize[]
+  tryOns   TryOn[]
+  wardrobe WardrobeItem[]
+
+  @@unique([storeId, externalId])
+  @@index([price])
+  @@index([color])
+  @@index([isAvailable])
+}
+
+// Розмір речі та наявність саме цього розміру
+model ItemSize {
+  id      Int     @id @default(autoincrement())
+  itemId  Int
+  size    String // XS, S, M, L, XL
+  inStock Boolean @default(true)
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, size])
+}
+
+// Запит на примірку: фото + річ -> результат від ШІ
+model TryOn {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  photoId    Int
+  itemId     Int
+  status     TryOnStatus @default(PENDING)
+  resultPath String?
+  errorText  String?
+  createdAt  DateTime    @default(now())
+  finishedAt DateTime?
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo UserPhoto @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  item  Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// «Мій гардероб»: збережені користувачем речі
+model WardrobeItem {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  itemId  Int
+  savedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
