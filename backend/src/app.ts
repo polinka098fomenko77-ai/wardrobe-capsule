@@ -17,3 +17,9 @@ app.get("/health", async (_req, res) => {
     res.status(503).json({ status: "error", db: "down" });
   }
 });
+
+// Маршрути підключаємо після створення app і prisma (щоб уникнути циклічного імпорту)
+import { authRouter } from "./routes/auth";
+import { meRouter } from "./routes/me";
+app.use("/auth", authRouter);
+app.use("/me", meRouter);
