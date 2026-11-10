@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { prisma } from "../app";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 
@@ -19,6 +20,7 @@ meRouter.get("/", async (req: AuthRequest, res) => {
 });
 
 const updateSchema = z.object({
+  email: z.string().email().optional(),
   nickname: z.string().regex(/^[a-zA-Z0-9._]{3,20}$/).optional(),
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
@@ -41,6 +43,34 @@ meRouter.patch("/", async (req: AuthRequest, res) => {
     });
     if (taken) return res.status(409).json({ error: "Нікнейм уже зайнятий" });
   }
-  const user = await prisma.user.update({ where: { id: req.userId }, data: parsed.data });
+  const data = { ...parsed.data };
+  if (data.email) {
+    data.email = data.email.toLowerCase();
+    const taken = await prisma.user.findFirst({
+      where: { email: data.email, NOT: { id: req.userId } },
+    });
+    if (taken) return res.status(409).json({ error: "Email уже зайнятий" });
+  }
+  const user = await prisma.user.update({ where: { id: req.userId }, data });
   res.json(publicUser(user));
+});
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8, "Пароль має містити щонайменше 8 символів"),
+});
+
+// POST /me/password: змінити пароль (потрібно ввести поточний)
+meRouter.post("/password", async (req: AuthRequest, res) => {
+  const parsed = passwordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Невірні дані", details: parsed.error.flatten().fieldErrors });
+  }
+  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!user) return res.status(404).json({ error: "Користувача не знайдено" });
+  const ok = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!ok) return res.status(403).json({ error: "Поточний пароль невірний" });
+  const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  res.json({ ok: true });
 });

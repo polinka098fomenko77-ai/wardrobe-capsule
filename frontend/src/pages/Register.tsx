@@ -3,18 +3,21 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
 import { useAuth } from "../auth";
 import { ApiError } from "../api";
+import { useI18n, type Key } from "../i18n";
+import { errorKey } from "../errors";
 
-const MEASURES = [
-  { key: "heightCm", label: "Зріст", ph: "168" },
-  { key: "chestCm", label: "Груди", ph: "88" },
-  { key: "waistCm", label: "Талія", ph: "68" },
-  { key: "hipsCm", label: "Стегна", ph: "94" },
-] as const;
+const MEASURES: { key: string; label: Key; ph: string }[] = [
+  { key: "heightCm", label: "f.height", ph: "168" },
+  { key: "chestCm", label: "f.chest", ph: "88" },
+  { key: "waistCm", label: "f.waist", ph: "68" },
+  { key: "hipsCm", label: "f.hips", ph: "94" },
+];
 
 export default function Register() {
   const { user, register } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<Key | "">("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
 
@@ -42,67 +45,63 @@ export default function Register() {
       });
       navigate("/profile");
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        setFieldErrors(err.details ?? {});
-      } else setError("Невідома помилка");
+      setError(errorKey(err, "register"));
+      if (err instanceof ApiError) setFieldErrors(err.details ?? {});
     } finally {
       setBusy(false);
     }
   }
 
-  const fe = (k: string) => fieldErrors[k]?.[0];
+  const bad = (k: string) => Boolean(fieldErrors[k]?.length);
 
   return (
     <div className="page">
       <Header />
       <main className="split">
         <section className="hero">
-          <span className="lbl hero-lbl">Віртуальна примірочна</span>
+          <span className="lbl hero-lbl">{t("hero.label")}</span>
           <h2 className="disp hero-title">
-            Приміряйте <em>вдома.</em> Купуйте впевнено.
+            {t("hero.title1")} <em>{t("hero.title2")}</em> {t("hero.title3")}
           </h2>
-          <p className="hero-text">
-            Одяг із різних магазинів на вашому власному фото. Мірки потрібні лише для того, щоб підказати розмір.
-          </p>
+          <p className="hero-text">{t("hero.text")}</p>
         </section>
 
-        <form className="form" onSubmit={onSubmit} noValidate>
+        <form className="card form" onSubmit={onSubmit} noValidate>
           <div className="steps" aria-hidden="true">
             <span className="on" /><span /><span /><span />
           </div>
           <div>
-            <h1 className="disp form-title">Створіть акаунт</h1>
-            <p className="muted">Нікнейм і аватарку можна змінити пізніше в профілі.</p>
+            <h1 className="disp form-title">{t("reg.title")}</h1>
+            <p className="muted">{t("reg.sub")}</p>
           </div>
 
           <div className="grid2">
-            <Field name="firstName" label="Ім'я" placeholder="Поліна" error={fe("firstName")} />
-            <Field name="lastName" label="Прізвище" placeholder="Фоменко" error={fe("lastName")} />
-            <Field name="nickname" label="Нікнейм" placeholder="polina" error={fe("nickname")} />
-            <Field name="email" label="Email" type="email" placeholder="name@example.com" error={fe("email")} />
+            <Field name="firstName" label={t("f.firstName")} placeholder="Поліна" error={bad("firstName")} />
+            <Field name="lastName" label={t("f.lastName")} placeholder="Фоменко" error={bad("lastName")} />
+            <Field name="nickname" label={t("f.nickname")} placeholder="polina" error={bad("nickname")} />
+            <Field name="email" label={t("f.email")} type="email" placeholder="name@example.com" error={bad("email")} />
             <div style={{ gridColumn: "span 2" }}>
-              <Field name="password" label="Пароль" type="password" placeholder="Щонайменше 8 символів" error={fe("password")} />
+              <Field name="password" label={t("f.password")} type="password" placeholder={t("f.passwordPh")} error={bad("password")} />
             </div>
           </div>
 
           <fieldset className="measures">
-            <legend className="disp">Параметри тіла, <em>см</em></legend>
+            <legend className="disp">{t("reg.measures")}</legend>
             <div className="grid4">
               {MEASURES.map((m) => (
-                <Field key={m.key} name={m.key} label={m.label} type="number" placeholder={m.ph} error={fe(m.key)} />
+                <Field key={m.key} name={m.key} label={t(m.label)} type="number" placeholder={m.ph} error={bad(m.key)} />
               ))}
             </div>
           </fieldset>
 
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && <p className="error" role="alert">{t(error)}</p>}
 
           <div className="actions">
             <button className="btn" type="submit" disabled={busy}>
-              {busy ? "Створюємо..." : "Продовжити"}
+              {busy ? t("reg.busy") : t("reg.submit")}
             </button>
             <span className="muted">
-              Вже є акаунт? <Link to="/login" className="link">Увійти</Link>
+              {t("reg.have")} <Link to="/login" className="link">{t("login.submit")}</Link>
             </span>
           </div>
         </form>
@@ -111,12 +110,11 @@ export default function Register() {
   );
 }
 
-function Field(props: { name: string; label: string; type?: string; placeholder?: string; error?: string }) {
+function Field(props: { name: string; label: string; type?: string; placeholder?: string; error?: boolean }) {
   return (
     <div className="field">
       <label htmlFor={props.name} className="lbl">{props.label}</label>
-      <input id={props.name} name={props.name} type={props.type ?? "text"} placeholder={props.placeholder} />
-      {props.error && <span className="field-error">{props.error}</span>}
+      <input id={props.name} name={props.name} type={props.type ?? "text"} placeholder={props.placeholder} aria-invalid={props.error || undefined} />
     </div>
   );
 }
