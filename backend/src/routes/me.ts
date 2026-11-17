@@ -3,6 +3,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "../app";
 import { requireAuth, AuthRequest } from "../middleware/auth";
+import { singleImage } from "../middleware/upload";
+import { detectImage, saveImage, removeFile } from "../lib/files";
 
 export const meRouter = Router();
 meRouter.use(requireAuth);
@@ -73,4 +75,26 @@ meRouter.post("/password", async (req: AuthRequest, res) => {
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
   res.json({ ok: true });
+});
+
+// POST /me/avatar: завантажити аватарку (поле "file")
+meRouter.post("/avatar", singleImage(5), async (req: AuthRequest, res) => {
+  if (!req.file) return res.status(400).json({ error: "Файл не передано" });
+  const ext = detectImage(req.file.buffer);
+  if (!ext) return res.status(415).json({ error: "Підтримуються лише JPG, PNG та WebP" });
+  const current = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!current) return res.status(404).json({ error: "Користувача не знайдено" });
+  const avatarPath = await saveImage("avatars", req.file.buffer, ext);
+  const user = await prisma.user.update({ where: { id: req.userId }, data: { avatarPath } });
+  await removeFile(current.avatarPath);
+  res.json(publicUser(user));
+});
+
+// DELETE /me/avatar: прибрати аватарку
+meRouter.delete("/avatar", async (req: AuthRequest, res) => {
+  const current = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!current) return res.status(404).json({ error: "Користувача не знайдено" });
+  const user = await prisma.user.update({ where: { id: req.userId }, data: { avatarPath: null } });
+  await removeFile(current.avatarPath);
+  res.json(publicUser(user));
 });

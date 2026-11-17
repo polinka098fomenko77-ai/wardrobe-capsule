@@ -7,6 +7,7 @@ type AuthState = {
   login: (email: string, password: string) => Promise<void>;
   register: (data: Record<string, unknown>) => Promise<void>;
   updateUser: (patch: Partial<User>) => Promise<void>;
+  setUser: (u: User) => void;
   logout: () => void;
 };
 
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, updateUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, updateUser, setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

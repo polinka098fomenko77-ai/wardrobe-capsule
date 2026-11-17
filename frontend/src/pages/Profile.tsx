@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { Header, Avatar } from "../components/Header";
 import { useAuth } from "../auth";
-import { api } from "../api";
+import { api, apiUpload, avatarUrl, type User } from "../api";
 import { useI18n, type Key } from "../i18n";
 import { errorKey } from "../errors";
 
@@ -24,13 +24,39 @@ function Status({ s }: { s: ReturnType<typeof useStatus> }) {
 }
 
 export default function Profile() {
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const { t } = useI18n();
+  const st = useStatus();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
 
   const initials = (user.firstName[0] + user.lastName[0]).toUpperCase();
+
+  async function onAvatar(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    st.setOk("");
+    st.setError("");
+    try {
+      setUser(await apiUpload<User>("/me/avatar", file));
+      st.setOk("profile.saved");
+    } catch (err) {
+      st.setError(errorKey(err, "other"));
+    }
+  }
+
+  async function onRemoveAvatar() {
+    st.setOk("");
+    st.setError("");
+    try {
+      setUser(await api<User>("/me/avatar", { method: "DELETE" }));
+    } catch (err) {
+      st.setError(errorKey(err, "other"));
+    }
+  }
 
   return (
     <div className="page">
@@ -42,8 +68,22 @@ export default function Profile() {
             <h1 className="disp form-title">{t("profile.title")}</h1>
           </div>
           <div className="avatar-row">
-            <Avatar name={initials} size={104} />
-            <span className="muted">{t("profile.avatarNote")}</span>
+            <Avatar name={initials} size={104} src={avatarUrl(user)} />
+            <div className="avatar-actions">
+              <div className="actions">
+                <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={onAvatar} />
+                <button className="btn small" type="button" onClick={() => fileRef.current?.click()}>
+                  {t("profile.avatarUpload")}
+                </button>
+                {user.avatarPath && (
+                  <button className="btn2 small" type="button" onClick={onRemoveAvatar}>
+                    {t("profile.avatarRemove")}
+                  </button>
+                )}
+              </div>
+              <span className="muted">{t("profile.avatarNote")}</span>
+              <Status s={st} />
+            </div>
           </div>
           <AccountForm />
         </section>

@@ -43,7 +43,7 @@ export default function Register() {
         waistCm: num("waistCm"),
         hipsCm: num("hipsCm"),
       });
-      navigate("/profile");
+      navigate("/photo");
     } catch (err) {
       setError(errorKey(err, "register"));
       if (err instanceof ApiError) setFieldErrors(err.details ?? {});

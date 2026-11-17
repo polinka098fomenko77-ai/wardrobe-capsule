@@ -7,6 +7,8 @@ export function errorKey(err: unknown, context: "login" | "register" | "password
     if (err.status === 0) return "err.server";
     if (err.status === 401 && context === "login") return "err.login";
     if (err.status === 403 && context === "password") return "err.currentPassword";
+    if (err.status === 413) return "err.tooLarge";
+    if (err.status === 415) return "err.fileType";
     if (err.status === 409) return "err.taken";
     if (err.status === 400) return "err.invalid";
   }
