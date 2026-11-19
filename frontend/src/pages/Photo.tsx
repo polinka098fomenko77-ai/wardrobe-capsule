@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Header } from "../components/Header";
 import { useAuth } from "../auth";
 import { api, apiBlobUrl, apiUpload } from "../api";
@@ -101,6 +101,7 @@ export default function PhotoPage() {
           </div>
           {error && <p className="error" role="alert">{t(error)}</p>}
           <p className="muted">{t("photo.camera")}</p>
+          <Link to="/camera" className="btn2">{t("photo.openCamera")}</Link>
         </section>
 
         <section className="card side">
