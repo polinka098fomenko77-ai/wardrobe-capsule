@@ -7,6 +7,7 @@ export const COLOR_HEX: Record<string, string> = {
   "бежевий": "#d8c7ad",
   "синій": "#2f4268",
   "зелений": "#3f5a47",
+  "інший": "#b8b8bd",
 };
 
 type Kind = "tee" | "shirt" | "hoodie" | "sweater" | "jacket" | "blazer";

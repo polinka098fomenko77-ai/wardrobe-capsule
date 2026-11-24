@@ -1,3 +1,4 @@
+import { SHOPIFY_STORES, fetchShopifyStore } from "./shopify";
 export type SourceItem = {
   externalId: string;
   name: string;
@@ -96,4 +97,13 @@ export async function fetchStoreCatalog(storeName: string, day: number): Promise
   }
 
   return result;
+}
+// Джерела каталогу: CATALOG_SOURCE=shopify (реальні магазини) або mock (імітація, за замовчуванням)
+export type Source = { name: string; siteUrl: string; fetch: (day: number) => Promise<SourceItem[]> };
+
+export function getSources(): Source[] {
+  if ((process.env.CATALOG_SOURCE || "mock") === "shopify") {
+    return SHOPIFY_STORES.map((s) => ({ name: s.name, siteUrl: s.baseUrl, fetch: () => fetchShopifyStore(s) }));
+  }
+  return STORES.map((s) => ({ name: s.name, siteUrl: s.siteUrl, fetch: (day: number) => fetchStoreCatalog(s.name, day) }));
 }

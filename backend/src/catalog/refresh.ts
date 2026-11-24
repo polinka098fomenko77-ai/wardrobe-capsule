@@ -1,11 +1,11 @@
 import { prisma } from "../app";
-import { STORES, currentDay, fetchStoreCatalog } from "./source";
+import { currentDay, getSources } from "./source";
 
 export type RefreshStats = { store: string; created: number; updated: number; hidden: number };
 
 let running = false;
 
-// Одне оновлення каталогу: усі магазини по черзі
+// Одне оновлення каталогу: усі магазини вибраного джерела по черзі
 export async function refreshCatalog(opts: { dayOffset?: number } = {}): Promise<RefreshStats[]> {
   if (running) {
     console.log("[catalog] оновлення вже виконується, пропускаю");
@@ -14,12 +14,15 @@ export async function refreshCatalog(opts: { dayOffset?: number } = {}): Promise
   running = true;
   const startedAt = new Date();
   const day = currentDay(opts.dayOffset ?? 0);
+  const sources = getSources();
   const stats: RefreshStats[] = [];
 
   try {
-    for (const s of STORES) {
+    for (const s of sources) {
       try {
-        const items = await fetchStoreCatalog(s.name, day);
+        const items = await s.fetch(day);
+        // Порожня відповідь схожа на збій джерела: не чіпаємо наявні речі цього магазину
+        if (items.length === 0) throw new Error("магазин не повернув жодної підходящої речі");
 
         const store = await prisma.store.upsert({
           where: { name: s.name },
@@ -81,10 +84,18 @@ export async function refreshCatalog(opts: { dayOffset?: number } = {}): Promise
           hidden: hidden.count,
         });
       } catch (e) {
-        // Збій одного магазину не повинен зупиняти решту і не ховає його товари
+        // Збій одного магазину не зупиняє решту і не ховає його товари
         console.error(`[catalog] ${s.name}: помилка оновлення`, e);
       }
     }
+
+    // Магазини, яких немає в поточному джерелі (наприклад, імітація після переходу на реальні), ховаємо
+    const names = sources.map((s) => s.name);
+    const other = await prisma.item.updateMany({
+      where: { isAvailable: true, store: { name: { notIn: names } } },
+      data: { isAvailable: false },
+    });
+    if (other.count) console.log(`[catalog] приховано речей інших джерел: ${other.count}`);
   } finally {
     running = false;
   }

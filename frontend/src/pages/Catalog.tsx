@@ -29,6 +29,7 @@ const COLORS: Record<string, { hex: string; en: string }> = {
   "бежевий": { hex: "#d8c7ad", en: "Beige" },
   "синій": { hex: "#2f4268", en: "Navy" },
   "зелений": { hex: "#3f5a47", en: "Green" },
+  "інший": { hex: "#b8b8bd", en: "Other" },
 };
 
 type Filters = { minPrice: string; maxPrice: string; size: string; color: string; store: string; sort: string; page: number };

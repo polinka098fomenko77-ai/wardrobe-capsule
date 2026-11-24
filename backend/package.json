@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "refresh": "tsx src/catalog/run.ts"
+    "refresh": "tsx src/catalog/run.ts",
+    "probe": "tsx src/catalog/probe.ts"
   },
   "keywords": [],
   "author": "",

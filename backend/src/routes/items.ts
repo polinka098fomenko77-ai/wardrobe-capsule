@@ -32,7 +32,7 @@ itemsRouter.get("/meta", async (_req, res) => {
   const base = { isAvailable: true };
   const [colors, stores, price] = await Promise.all([
     prisma.item.findMany({ where: base, distinct: ["color"], select: { color: true }, orderBy: { color: "asc" } }),
-    prisma.store.findMany({ select: { name: true }, orderBy: { name: "asc" } }),
+    prisma.store.findMany({ where: { items: { some: { isAvailable: true } } }, select: { name: true }, orderBy: { name: "asc" } }),
     prisma.item.aggregate({ where: base, _min: { price: true }, _max: { price: true } }),
   ]);
   res.json({
