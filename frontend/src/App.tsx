@@ -5,6 +5,7 @@ import Profile from "./pages/Profile";
 import Photo from "./pages/Photo";
 import Camera from "./pages/Camera";
 import Catalog from "./pages/Catalog";
+import Wardrobe from "./pages/Wardrobe";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
       <Route path="/photo" element={<Photo />} />
       <Route path="/camera" element={<Camera />} />
       <Route path="/catalog" element={<Catalog />} />
+      <Route path="/wardrobe" element={<Wardrobe />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

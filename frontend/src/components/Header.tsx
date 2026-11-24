@@ -109,6 +109,12 @@ function UserMenu() {
             </svg>
             {t("menu.catalog")}
           </Link>
+          <Link to="/wardrobe" role="menuitem" className="menu-item" onClick={() => setOpen(false)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3L3 6l2 4 3-1v11h8V9l3 1 2-4-5-3a4 4 0 01-8 0z" />
+            </svg>
+            {t("menu.wardrobe")}
+          </Link>
           <button type="button" role="menuitem" className="menu-item" onClick={() => { setOpen(false); logout(); }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />

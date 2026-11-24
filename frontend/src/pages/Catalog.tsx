@@ -41,9 +41,13 @@ export default function CatalogPage() {
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState<Key | "">("");
+  const [saved, setSaved] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (user) api<Meta>("/items/meta").then(setMeta).catch(() => {});
+    if (user) {
+      api<Meta>("/items/meta").then(setMeta).catch(() => {});
+      api<{ ids: number[] }>("/wardrobe/ids").then((r) => setSaved(new Set(r.ids))).catch(() => {});
+    }
   }, [user]);
 
   // Запит каталогу при кожній зміні фільтрів (з маленькою паузою, щоб не слати запит на кожну цифру)
@@ -83,6 +87,22 @@ export default function CatalogPage() {
   const colorLabel = (c: string) => (lang === "uk" ? c : COLORS[c]?.en ?? c);
   const money = (n: number, cur: string) =>
     `${n.toLocaleString(lang === "uk" ? "uk-UA" : "en-GB")} ${cur === "UAH" && lang === "uk" ? "грн" : cur}`;
+
+  // Додати річ у гардероб або прибрати її звідти
+  const toggleSaved = async (id: number) => {
+    const has = saved.has(id);
+    try {
+      await api(has ? `/wardrobe/${id}` : "/wardrobe", has ? { method: "DELETE" } : { method: "POST", body: { itemId: id } });
+      setSaved((s) => {
+        const n = new Set(s);
+        if (has) n.delete(id);
+        else n.add(id);
+        return n;
+      });
+    } catch (err) {
+      setError(errorKey(err, "other"));
+    }
+  };
 
   return (
     <div className="page">
@@ -193,6 +213,18 @@ export default function CatalogPage() {
                     <Garment name={it.name} color={COLORS[it.color]?.hex ?? "#999999"} />
                   )}
                   <span className="item-store">{it.store}</span>
+                  <button
+                    type="button"
+                    className={"heart" + (saved.has(it.id) ? " on" : "")}
+                    aria-pressed={saved.has(it.id)}
+                    aria-label={t(saved.has(it.id) ? "wd.remove" : "wd.add")}
+                    title={t(saved.has(it.id) ? "wd.remove" : "wd.add")}
+                    onClick={() => toggleSaved(it.id)}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={saved.has(it.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 21s-7-4.4-9.3-9A5.3 5.3 0 0112 6.6 5.3 5.3 0 0121.3 12C19 16.6 12 21 12 21z" />
+                    </svg>
+                  </button>
                 </div>
                 <div className="item-info">
                   <b>{it.name}</b>
