@@ -26,10 +26,12 @@ import { meRouter } from "./routes/me";
 import { photosRouter } from "./routes/photos";
 import { itemsRouter } from "./routes/items";
 import { wardrobeRouter } from "./routes/wardrobe";
+import { tryonsRouter } from "./routes/tryons";
 app.use("/auth", authRouter);
 app.use("/me", meRouter);
 app.use("/photos", photosRouter);
 app.use("/items", itemsRouter);
 app.use("/wardrobe", wardrobeRouter);
+app.use("/tryons", tryonsRouter);
 // Аватарки публічні (назви випадкові). Фото для примірки віддаються лише власнику через /photos/:id/file
 app.use("/uploads/avatars", express.static(path.join(UPLOAD_DIR, "avatars")));

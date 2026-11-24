@@ -85,6 +85,7 @@ export default function WardrobePage() {
                 <b>{it.name}</b>
                 <span className="item-price">{money(it.price, it.currency)}</span>
                 <span className="muted item-sizes">{it.sizes.join(" · ")}</span>
+                <Link to={`/tryon/${it.id}`} className="btn small">{t("wd.tryOn")}</Link>
                 <button type="button" className="btn2 small" onClick={() => remove(it.id)}>
                   {t("wd.remove")}
                 </button>
