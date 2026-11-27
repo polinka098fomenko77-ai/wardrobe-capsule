@@ -11,7 +11,8 @@
     "db:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "refresh": "tsx src/catalog/run.ts",
-    "probe": "tsx src/catalog/probe.ts"
+    "probe": "tsx src/catalog/probe.ts",
+    "test": "node --import tsx --test --test-reporter=spec \"src/**/*.test.ts\""
   },
   "keywords": [],
   "author": "",
